@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生資料查詢系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts: Noto Sans TC (日式排版常用黑體風格) & Shippori Mincho (優雅明體) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* 日式傳統色彩搭配 */
+            --color-bg: #F4F1EA; /* 胡粉色 (Gofun) - 溫暖的灰白色 */
+            --color-primary: #8C4A56; /* 蘇芳色 (Suoh) - 深沉的暗紅色 */
+            --color-secondary: #5B622E; /* 鶯色 (Uguisu) - 沉穩的灰綠色 */
+            --color-text-main: #333333; /* 墨色 (Sumi) - 接近黑色的深灰 */
+            --color-text-light: #7A7A7A;
+            --color-border: #DCD6CD;
+            --color-paper: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text-main);
+            /* 預設字體：黑體，用於一般閱讀內容 */
+            font-family: 'Noto Sans TC', sans-serif;
+            background-image: 
+                /* 添加細微的和紙紋理感 (使用漸層模擬) */
+                linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* 標題與重點強調使用明體 (Mincho)，增添傳統優雅感 */
+        .font-japanese-title {
+            font-family: 'Shippori Mincho', serif;
+        }
+
+        .shoji-container {
+            background-color: var(--color-paper);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            position: relative;
+            /* 模擬障子(Shoji)門框的感覺 */
+            border: 8px solid var(--color-primary);
+            border-radius: 4px;
+        }
+
+        /* 裝飾性線條 */
+        .decor-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, var(--color-secondary) 50%, transparent 100%);
+            margin: 1.5rem 0;
+        }
+
+        /* 自訂下拉選單樣式 */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238C4A56' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            border: 1px solid var(--color-border);
+            border-bottom: 2px solid var(--color-primary); /* 強調底線 */
+            border-radius: 0; /* 日式風格較少圓角 */
+            transition: all 0.3s ease;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(140, 74, 86, 0.2); /* 蘇芳色陰影 */
+        }
+
+        /* 按鈕樣式 */
+        .btn-japanese {
+            background-color: var(--color-primary);
+            color: white;
+            border: 2px solid var(--color-primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+
+        .btn-japanese:hover {
+            background-color: var(--color-paper);
+            color: var(--color-primary);
+        }
+
+        .btn-japanese:active {
+            transform: scale(0.98);
+        }
+
+        /* 表格樣式 */
+        .table-container {
+            border: 1px solid var(--color-border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: var(--color-bg);
+            color: var(--color-primary);
+            font-weight: 500;
+            border-bottom: 2px solid var(--color-primary);
+            font-family: 'Shippori Mincho', serif;
+        }
+
+        td {
+            border-bottom: 1px dashed var(--color-border);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background-color: #faf9f6;
+        }
+
+        /* 載入動畫 (日式印章風格) */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--color-primary);
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        .loader::after {
+            content: '';  
+            box-sizing: border-box;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-bottom-color: var(--color-secondary);
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(244, 241, 234, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            backdrop-filter: blur(2px);
+        }
+
+        .hidden { display: none !important; }
+        
+        /* 縱向文字排版 (用於裝飾) */
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            letter-spacing: 0.2em;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
+    <!-- 全域載入中遮罩 -->
+    <div id="globalLoader" class="loading-overlay">
+        <span class="loader"></span>
+        <p class="mt-4 font-japanese-title text-[--color-primary] text-lg">系統準備中...</p>
+    </div>
+
+    <main class="w-full max-w-4xl shoji-container p-6 sm:p-10 relative">
+        
+        <!-- 左側裝飾文字 -->
+        <div class="absolute left-4 top-8 h-full hidden md:block">
+            <p class="vertical-text font-japanese-title text-[--color-text-light] text-sm opacity-50">
+                學年度與班級名單查詢系統
+            </p>
+        </div>
+
+        <header class="text-center mb-8">
+            <div class="inline-block p-2 border-b-2 border-t-2 border-[--color-secondary] mb-2">
+                <h1 class="text-3xl sm:text-4xl font-japanese-title text-[--color-primary] tracking-widest">
+                    學生資料
+                </h1>
+            </div>
+            <p class="text-sm text-[--color-text-light] tracking-wider mt-2">學年度與班級名單查詢</p>
+            <div class="decor-line"></div>
+        </header>
+
+        <section class="mb-8">
+            <div class="bg-[--color-bg] p-6 rounded border border-[--color-border]">
+                <label class="block font-japanese-title text-[--color-text-main] mb-3 text-lg">
+                    <span class="inline-block w-2 h-2 bg-[--color-primary] mr-2 transform rotate-45"></span>
+                    選擇查詢條件
+                </label>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="relative flex-grow">
+                        <select id="yearSelect" disabled
+                                class="block w-full bg-white text-gray-700 py-3 px-4 pr-10 leading-tight cursor-not-allowed opacity-70">
+                            <option value="">載入學年度...</option>
+                        </select>
+                    </div>
+                    <div class="relative flex-grow">
+                        <select id="classSelect" disabled
+                                class="block w-full bg-white text-gray-700 py-3 px-4 pr-10 leading-tight cursor-not-allowed opacity-70">
+                            <option value="">載入班級...</option>
+                        </select>
+                    </div>
+                    <button id="searchBtn" disabled
+                            class="btn-japanese font-japanese-title py-3 px-8 text-lg shadow-sm w-full sm:w-auto opacity-70 cursor-not-allowed">
+                        查 詢
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultsArea" class="hidden animate-fade-in">
+            <div class="flex items-end justify-between mb-4">
+                <h2 class="text-xl font-japanese-title text-[--color-text-main] border-l-4 border-[--color-primary] pl-3">
+                    查詢結果：<span id="resultTitle" class="text-[--color-secondary]"></span>
+                </h2>
+                <span id="resultCount" class="text-sm text-[--color-text-light]"></span>
+            </div>
+
+            <div class="table-container bg-white shadow-sm overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr>
+                            <th class="py-4 px-6 w-1/3 text-center">座號</th>
+                            <th class="py-4 px-6 text-center">姓名</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultTableBody">
+                        <!-- 資料將透過 JS 動態插入 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="noDataMessage" class="hidden text-center py-10 text-[--color-text-light]">
+                <p>該班級目前沒有學生資料。</p>
+            </div>
+        </section>
+
+        <!-- 區域載入指示器 -->
+        <div id="sectionLoader" class="hidden py-10 flex-col items-center justify-center">
+            <span class="loader"></span>
+            <p class="mt-4 font-japanese-title text-[--color-text-light]">資料查詢中...</p>
+        </div>
+
+    </main>
+
+    <script>
+        // ============================================================================
+        // 重要：請將下方的 URL 替換成您部署 Google Apps Script 後得到的「網頁應用程式網址」
+        // ============================================================================
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwXy5Q6_p4eK871_41M0k4U7n9x7t4m7k_v8Y3j6b/exec'; 
+        // 👆 請替換為您的真實 URL。
+        
+        // DOM 元素
+        const yearSelect = document.getElementById('yearSelect');
+        const classSelect = document.getElementById('classSelect');
+        const searchBtn = document.getElementById('searchBtn');
+        const resultsArea = document.getElementById('resultsArea');
+        const resultTableBody = document.getElementById('resultTableBody');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultCount = document.getElementById('resultCount');
+        const noDataMessage = document.getElementById('noDataMessage');
+        const globalLoader = document.getElementById('globalLoader');
+        const sectionLoader = document.getElementById('sectionLoader');
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchOptions();
+        });
+
+        /**
+         * 從 GAS 獲取下拉選單的選項
+         */
+        async function fetchOptions() {
+            try {
+                // 呼叫 GAS，指定 action=getOptions
+                const response = await fetch(`${GAS_URL}?action=getOptions`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 填入學年度與班級選單
+                populateSelect(yearSelect, data.years, '請選擇學年度', '學年度');
+                populateSelect(classSelect, data.classes, '請選擇班級', '班級');
+                
+                // 隱藏全域載入器，啟用介面
+                globalLoader.classList.add('hidden');
+                
+                // 啟用學年度選單
+                enableSelect(yearSelect);
+                // 啟用班級選單
+                enableSelect(classSelect);
+                
+                // 啟用按鈕
+                if(data.years.length > 0 && data.classes.length > 0) {
+                     searchBtn.disabled = false;
+                     searchBtn.classList.remove('cursor-not-allowed', 'opacity-70');
+                }
+
+            } catch (error) {
+                console.error('獲取選項失敗:', error);
+                globalLoader.classList.add('hidden');
+                yearSelect.innerHTML = '<option value="">系統連線失敗</option>';
+                classSelect.innerHTML = '<option value="">系統連線失敗</option>';
+                alert('系統發生錯誤：無法讀取資料庫選項。請確認 GAS URL 是否設定正確。');
+            }
+        }
+        
+        function enableSelect(selectElement) {
+            selectElement.disabled = false;
+            selectElement.classList.remove('cursor-not-allowed', 'opacity-70');
+            selectElement.classList.add('cursor-pointer');
+        }
+
+        /**
+         * 通用的選單填入函數
+         * @param {HTMLElement} selectElement - 目標 select 元素
+         * @param {Array<string>} options - 選項陣列
+         * @param {string} defaultText - 預設提示文字
+         * @param {string} suffix - 顯示的後綴詞 (如：學年度)
+         */
+        function populateSelect(selectElement, options, defaultText, suffix) {
+            selectElement.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
+            
+            if (options.length === 0) {
+                selectElement.innerHTML = `<option value="">無可用資料</option>`;
+                selectElement.disabled = true;
+                return;
+            }
+            
+            options.forEach(opt => {
+                const optionElement = document.createElement('option');
+                optionElement.value = opt;
+                // 如果是學年度，加上「學年度」字樣增加閱讀性；若是班級則直接顯示
+                optionElement.textContent = suffix === '學年度' ? `${opt} 學年度` : opt;
+                selectElement.appendChild(optionElement);
+            });
+        }
+
+        // 綁定搜尋按鈕事件
+        searchBtn.addEventListener('click', () => {
+            const selectedYear = yearSelect.value;
+            const selectedClass = classSelect.value;
+            
+            if (!selectedYear || !selectedClass) {
+                // 檢查是否兩個條件都選擇了
+                showTempMessage('請確實選擇「學年度」與「班級」。');
+                return;
+            }
+
+            queryData(selectedYear, selectedClass);
+        });
+
+        /**
+         * 顯示暫時的提示訊息
+         */
+        function showTempMessage(msg) {
+             const div = document.createElement('div');
+             div.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-[--color-primary] text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce font-japanese-title';
+             div.textContent = msg;
+             document.body.appendChild(div);
+             setTimeout(() => div.remove(), 3000);
+        }
+
+        /**
+         * 呼叫 GAS 查詢特定班級資料
+         */
+        async function queryData(year, className) {
+            // UI 狀態切換
+            resultsArea.classList.add('hidden');
+            sectionLoader.classList.remove('hidden');
+            sectionLoader.classList.add('flex');
+            searchBtn.disabled = true;
+
+            try {
+                // 建構查詢 URL
+                const url = new URL(GAS_URL);
+                url.searchParams.append('action', 'queryData');
+                url.searchParams.append('year', year);
+                url.searchParams.append('className', className);
+
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderResults(data, year, className);
+
+            } catch (error) {
+                console.error('查詢資料失敗:', error);
+                showTempMessage('查詢失敗，請稍後再試或檢查連線。');
+            } finally {
+                // 恢復 UI 狀態
+                sectionLoader.classList.add('hidden');
+                sectionLoader.classList.remove('flex');
+                searchBtn.disabled = false;
+            }
+        }
+
+        /**
+         * 將查詢結果渲染到表格中
+         */
+        function renderResults(data, year, className) {
+            resultTitle.textContent = `${year}年度 ${className}`;
+            resultTableBody.innerHTML = ''; // 清空現有表格
+            
+            if (data && data.length > 0) {
+                // 有資料
+                resultCount.textContent = `共 ${data.length} 名學生`;
+                
+                // 依照座號排序 (假設座號是數字)
+                data.sort((a, b) => {
+                    const numA = parseInt(a.seatNumber, 10);
+                    const numB = parseInt(b.seatNumber, 10);
+                    // 處理無法轉為數字的情況
+                    if(isNaN(numA) || isNaN(numB)) return String(a.seatNumber).localeCompare(String(b.seatNumber));
+                    return numA - numB;
+                });
+
+                data.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.className = 'transition-colors duration-150';
+                    
+                    row.innerHTML = `
+                        <td class="py-3 px-6 text-center font-medium text-[--color-secondary]">${student.seatNumber}</td>
+                        <td class="py-3 px-6 text-center text-lg">${student.name}</td>
+                    `;
+                    resultTableBody.appendChild(row);
+                });
+
+                document.querySelector('.table-container').classList.remove('hidden');
+                noDataMessage.classList.add('hidden');
+            } else {
+                // 無資料
+                resultCount.textContent = '共 0 名學生';
+                document.querySelector('.table-container').classList.add('hidden');
+                noDataMessage.classList.remove('hidden');
+            }
+
+            // 顯示結果區塊
+            resultsArea.classList.remove('hidden');
+            
+            // 平滑滾動到結果區塊
+            resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
